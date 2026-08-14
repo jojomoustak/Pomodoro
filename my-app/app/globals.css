@@ -1,0 +1,734 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  color-scheme: only light;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optional tools are fully isolated so the supplied timer UI is unchanged. */
+.pomodoro-tools-entry {
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  padding: 0 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.pomodoro-tools-entry:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: translateY(-1px);
+}
+
+.pomodoro-tools-entry:active {
+  transform: scale(0.95);
+}
+
+.pomodoro-quick-presets {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.pomodoro-quick-presets button {
+  min-width: 66px;
+  min-height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
+  padding: 5px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.pomodoro-quick-presets button:hover,
+.pomodoro-quick-presets button.selected {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.pomodoro-quick-presets button:active {
+  transform: scale(0.95);
+}
+
+.pomodoro-quick-presets strong {
+  font-size: 0.9rem;
+}
+
+.pomodoro-quick-presets span {
+  max-width: 48px;
+  overflow: hidden;
+  font-size: 0.58rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pomodoro-tools-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  display: grid;
+  place-items: center;
+  background: rgba(31, 48, 42, 0.44);
+  backdrop-filter: blur(8px);
+}
+
+.pomodoro-tools-dialog {
+  --tools-page: #fff9f5;
+  --tools-surface: #fffefd;
+  --tools-soft: #fff0ed;
+  --tools-text: #26463d;
+  --tools-muted: #788780;
+  --tools-line: rgba(38, 70, 61, 0.11);
+  --tools-accent: #f46f64;
+  --tools-green: #4f9674;
+  --tools-toggle-off: #d9dfdc;
+  width: min(760px, 100%);
+  max-height: min(820px, calc(100dvh - 24px));
+  border: 1px solid var(--tools-line);
+  border-radius: 26px;
+  background: var(--tools-page);
+  color: var(--tools-text);
+  box-shadow: 0 22px 64px rgba(31, 53, 46, 0.2);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+html[data-pomodoro-theme="dark"] .pomodoro-tools-dialog {
+  --tools-page: #1b2723;
+  --tools-surface: #23312c;
+  --tools-soft: #2c3b35;
+  --tools-text: #f3f8f5;
+  --tools-muted: #abbab4;
+  --tools-line: rgba(237, 248, 242, 0.13);
+  --tools-toggle-off: #53615c;
+}
+
+html[data-pomodoro-theme="amoled"] .pomodoro-tools-dialog {
+  --tools-page: #000000;
+  --tools-surface: #0b0b0b;
+  --tools-soft: #151515;
+  --tools-text: #f7f7f7;
+  --tools-muted: #a6a6a6;
+  --tools-line: rgba(255, 255, 255, 0.15);
+  --tools-toggle-off: #333333;
+}
+
+.pomodoro-tools-header {
+  min-height: 84px;
+  padding: 18px 24px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.pomodoro-tools-header > div {
+  position: relative;
+  padding-left: 44px;
+}
+
+.pomodoro-tools-header > div::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 31px;
+  height: 29px;
+  border-radius: 46% 46% 50% 50%;
+  background: var(--tools-accent);
+  box-shadow: inset -3px -3px 0 rgba(194, 70, 60, 0.14);
+  transform: translateY(-46%);
+}
+
+.pomodoro-tools-header > div::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 8px;
+  width: 13px;
+  height: 7px;
+  border-radius: 100% 12% 100% 12%;
+  background: var(--tools-green);
+  transform: rotate(-14deg);
+}
+
+.pomodoro-tools-header p,
+.tools-section-heading > p {
+  margin: 0 0 5px;
+  color: var(--tools-accent);
+  font-size: 0.69rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.pomodoro-tools-header h2 {
+  margin: 0;
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.pomodoro-tools-header > button {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--tools-line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tools-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.pomodoro-tools-header > button:hover {
+  background: var(--tools-soft);
+  color: var(--tools-text);
+}
+
+.pomodoro-tools-header > button:active {
+  transform: scale(0.94);
+}
+
+.pomodoro-tools-tabs {
+  margin: 0 20px;
+  padding: 4px;
+  border: 0;
+  border-radius: 17px;
+  background: var(--tools-soft);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.pomodoro-tools-tabs button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--tools-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.pomodoro-tools-tabs button.active {
+  background: var(--tools-surface);
+  color: var(--tools-text);
+  box-shadow: 0 2px 8px rgba(38, 70, 61, 0.08);
+}
+
+.pomodoro-tools-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px 26px 30px;
+}
+
+.tools-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.tools-select-row select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--tools-line);
+  border-radius: 12px;
+  background: var(--tools-surface);
+  color: var(--tools-text);
+  padding: 0 14px;
+  outline: none;
+}
+
+.tools-select-row select:focus {
+  border-color: var(--tools-accent);
+}
+
+.tools-section-heading {
+  margin-bottom: 2px;
+}
+
+.tools-section-heading h3,
+.tools-history-list h3,
+.tools-empty-state h3 {
+  margin: 0;
+  font-size: 1.03rem;
+  letter-spacing: -0.015em;
+}
+
+.tools-section-heading > span {
+  display: block;
+  margin-top: 7px;
+  color: var(--tools-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.tools-heading-row,
+.tools-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.tools-heading-row button,
+.tools-secondary-button,
+.tools-button-grid button {
+  min-height: 44px;
+  border: 1px solid var(--tools-line);
+  border-radius: 12px;
+  background: var(--tools-surface);
+  color: var(--tools-text);
+  padding: 0 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.tools-heading-row button:hover,
+.tools-secondary-button:hover,
+.tools-button-grid button:hover {
+  border-color: rgba(244, 111, 100, 0.3);
+  background: var(--tools-soft);
+}
+
+.tools-heading-row button:active,
+.tools-secondary-button:active,
+.tools-button-grid button:active {
+  transform: scale(0.98);
+}
+
+.tools-history-task {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--tools-line);
+  border-radius: 16px;
+  background: var(--tools-surface);
+}
+
+.tools-history-task > span {
+  color: var(--tools-accent);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tools-history-task input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: var(--tools-text);
+  padding: 9px 2px;
+  outline: none;
+  font: inherit;
+  font-weight: 700;
+}
+
+.tools-history-task input:focus {
+  border-bottom-color: var(--tools-accent);
+}
+
+.tools-history-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 17px 0;
+  border: 1px solid var(--tools-line);
+  border-radius: 18px;
+  background: var(--tools-soft);
+}
+
+.tools-history-summary p {
+  margin: 0;
+  padding: 0 16px;
+  border-right: 1px solid var(--tools-line);
+}
+
+.tools-history-summary p:first-child {
+  padding-left: 16px;
+}
+
+.tools-history-summary p:last-child {
+  border-right: 0;
+}
+
+.tools-history-summary strong {
+  display: block;
+  color: var(--tools-text);
+  font-size: 1.3rem;
+  letter-spacing: -0.03em;
+}
+
+.tools-history-summary span {
+  display: block;
+  margin-top: 4px;
+  color: var(--tools-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tools-history-list {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--tools-line);
+}
+
+.tools-history-list article {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--tools-line);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  transition: color 160ms ease, padding 160ms ease;
+}
+
+.tools-history-list article:hover {
+  color: var(--tools-accent);
+  padding-right: 4px;
+  padding-left: 4px;
+}
+
+.tools-history-list p,
+.tools-empty-state p,
+.tools-footer p {
+  margin: 5px 0 0;
+  color: var(--tools-muted);
+  font-size: 0.72rem;
+}
+
+.tools-history-list strong {
+  color: var(--tools-text);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.tools-empty-state {
+  min-height: 210px;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--tools-line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.tools-empty-state::before {
+  content: "";
+  width: 18px;
+  height: 17px;
+  margin-bottom: 14px;
+  border: 2px solid var(--tools-accent);
+  border-radius: 46% 46% 50% 50%;
+  opacity: 0.75;
+}
+
+.tools-settings-grid {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 0;
+}
+
+.tools-settings-grid .tools-card {
+  padding: 22px 2px;
+  border-bottom: 1px solid var(--tools-line);
+  background: transparent;
+}
+
+.tools-toggle-row,
+.tools-range-row,
+.tools-select-row {
+  min-height: 62px;
+  border-top: 1px solid var(--tools-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tools-toggle-row > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tools-toggle-row small {
+  color: var(--tools-muted);
+  font-size: 0.68rem;
+}
+
+.tools-toggle-row input {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 25px;
+  border-radius: 999px;
+  background: var(--tools-toggle-off);
+  position: relative;
+  cursor: pointer;
+}
+
+.tools-toggle-row input::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 4px rgba(38, 70, 61, 0.22);
+  transition: transform 160ms ease;
+}
+
+.tools-toggle-row input:checked {
+  background: var(--tools-green);
+}
+
+.tools-toggle-row input:checked::after {
+  transform: translateX(19px);
+}
+
+.tools-range-row {
+  padding: 12px 0;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.tools-range-row input {
+  width: 100%;
+  accent-color: var(--tools-accent);
+}
+
+.tools-select-row select {
+  width: auto;
+  min-width: 150px;
+}
+
+.tools-secondary-button {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.tools-button-grid {
+  margin-top: 15px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tools-button-grid button.danger {
+  border-color: rgba(232, 79, 64, 0.3);
+  color: #e84f40;
+}
+
+.tools-footer {
+  grid-column: 1 / -1;
+  padding: 22px 2px 2px;
+}
+
+.tools-footer a {
+  color: var(--tools-accent);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.tools-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.pomodoro-toast {
+  position: fixed;
+  z-index: 1200;
+  right: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  max-width: min(360px, calc(100% - 36px));
+  border-radius: 999px;
+  background: #26463d;
+  color: white;
+  padding: 12px 18px;
+  box-shadow: 0 12px 30px rgba(38, 70, 61, 0.22);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.pomodoro-tools-dialog :is(button, input, select):focus-visible {
+  outline: 3px solid rgba(244, 111, 100, 0.28);
+  outline-offset: 2px;
+}
+
+/* Themes are opt-in. The default light mode leaves every supplied class intact. */
+html[data-pomodoro-theme="dark"] body,
+html[data-pomodoro-theme="dark"] #timer + section {
+  background: #18221f !important;
+}
+
+html[data-pomodoro-theme="amoled"] body,
+html[data-pomodoro-theme="amoled"] #timer + section {
+  background: #000 !important;
+}
+
+html[data-pomodoro-theme="dark"] #timer,
+html[data-pomodoro-theme="amoled"] #timer {
+  background: #25332e !important;
+}
+
+html[data-pomodoro-theme="amoled"] #timer {
+  background: #080b0a !important;
+}
+
+html[data-pomodoro-theme="dark"] #timer + section :is(h2, h3),
+html[data-pomodoro-theme="amoled"] #timer + section :is(h2, h3) {
+  color: #f4f7f5 !important;
+}
+
+html[data-pomodoro-theme="dark"] #timer + section :is(p, footer, a),
+html[data-pomodoro-theme="amoled"] #timer + section :is(p, footer, a) {
+  color: #b2beb9 !important;
+}
+
+html[data-pomodoro-theme="dark"] .pomodoro-main-title {
+  color: #d8f3e5 !important;
+}
+
+html[data-pomodoro-theme="amoled"] .pomodoro-main-title {
+  color: #8ee6bd !important;
+}
+
+html[data-pomodoro-theme="dark"] .pomodoro-mode-label {
+  color: rgba(216, 243, 229, 0.78) !important;
+}
+
+html[data-pomodoro-theme="amoled"] .pomodoro-mode-label {
+  color: rgba(142, 230, 189, 0.78) !important;
+}
+
+@media (max-width: 700px) {
+  .pomodoro-tools-dialog {
+    max-height: calc(100dvh - 16px);
+    border-radius: 24px;
+  }
+
+  .pomodoro-tools-header {
+    min-height: 68px;
+    padding: 14px 16px 10px;
+  }
+
+  .pomodoro-tools-tabs {
+    margin: 0 12px;
+  }
+
+  .pomodoro-tools-content {
+    padding: 18px 16px 26px;
+  }
+
+  .tools-heading-row,
+  .tools-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 430px) {
+  .pomodoro-tools-backdrop {
+    padding: 0;
+  }
+
+  .pomodoro-tools-dialog {
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .pomodoro-tools-tabs button {
+    min-height: 40px;
+    padding: 0 4px;
+    font-size: 0.68rem;
+  }
+
+  .tools-history-task {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .tools-history-summary {
+    grid-template-columns: 1fr;
+    padding: 8px 0;
+  }
+
+  .tools-history-summary p,
+  .tools-history-summary p:first-child {
+    padding: 10px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--tools-line);
+  }
+
+  .tools-history-summary p:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pomodoro-tools-dialog *,
+  .pomodoro-toast {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
