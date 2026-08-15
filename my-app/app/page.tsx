@@ -2797,7 +2797,7 @@ useEffect(() => {
                   className="
                     flex
                     items-center
-                    gap-3
+                    gap-2
                   "
                 >
 
